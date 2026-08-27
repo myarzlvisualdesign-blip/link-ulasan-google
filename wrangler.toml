@@ -1,0 +1,6 @@
+name = "link-ulasan-google"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "public"
+
+# Key Places API dipasang sebagai secret, bukan di file ini:
+#   npx wrangler pages secret put GOOGLE_MAPS_API_KEY
