@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "wrangler pages dev",
     "deploy": "wrangler pages deploy",
-    "build:vendor": "esbuild scripts/qrcode-entry.js --bundle --minify --format=iife --global-name=QRCodeLib --target=es2018 --outfile=public/vendor/qrcode.min.js"
+    "build:vendor": "esbuild scripts/qrcode-entry.js --bundle --minify --format=iife --global-name=QRCodeLib --target=es2018 --outfile=public/vendor/qrcode.min.js",
+    "build": "node scripts/build-dist.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",
