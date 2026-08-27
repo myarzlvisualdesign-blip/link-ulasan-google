@@ -9,10 +9,16 @@
     "dev": "wrangler pages dev",
     "deploy": "wrangler pages deploy",
     "build:vendor": "esbuild scripts/qrcode-entry.js --bundle --minify --format=iife --global-name=QRCodeLib --target=es2018 --outfile=public/vendor/qrcode.min.js",
-    "build": "node scripts/build-dist.mjs"
+    "build": "node scripts/build-dist.mjs",
+    "audit": "node scripts/audit.mjs",
+    "audit:browser": "node scripts/browser-audit.mjs"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "esbuild": "^0.25.0",
+    "jsqr": "^1.4.0",
+    "playwright-core": "^1.62.1",
+    "pngjs": "^7.0.0",
     "qrcode": "^1.5.4",
     "wrangler": "^4.0.0"
   }

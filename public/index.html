@@ -1,295 +1,285 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Generator Link Ulasan Google + QR Code</title>
-<meta name="description" content="Buat link ulasan Google langsung untuk usaha Anda beserta QR code siap cetak. Gratis, cepat, tanpa login.">
-<meta name="theme-color" content="#1a73e8">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta property="og:title" content="Generator Link Ulasan Google + QR Code">
-<meta property="og:description" content="Cari usaha Anda, dapatkan link ulasan Google langsung dan QR code siap cetak.">
-<meta property="og:type" content="website">
-<link rel="stylesheet" href="/assets/app.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Generator Link Ulasan Google & QR Code Gratis</title>
+  <meta name="description" content="Buat link ulasan Google dan QR code siap pindai untuk bisnis Anda. Gratis, cepat, tanpa login.">
+  <meta name="theme-color" content="#060b3b">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta property="og:title" content="Generator Link Ulasan Google & QR Code Gratis">
+  <meta property="og:description" content="Temukan bisnis Anda, lalu dapatkan link ulasan Google dan QR code siap pakai.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="/assets/app.css">
 </head>
 <body>
-<a class="skip" href="#main">Lompat ke konten</a>
+  <a class="skip" href="#generator">Lompat ke generator</a>
 
-<header class="site-header">
-  <div class="wrap header-inner">
-    <a class="brand" href="/">
-      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-        <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#bg)"/>
-        <path d="M16 8.5l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7z" fill="#fff"/>
-        <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#2b7cf0"/><stop offset="1" stop-color="#00a37a"/>
-        </linearGradient></defs>
-      </svg>
-      <span>Link Ulasan<strong>Google</strong></span>
-    </a>
-    <div class="header-actions">
-      <button type="button" class="btn ghost sm" id="btnSettings" aria-haspopup="dialog">
-        <span aria-hidden="true">&#9881;</span> API Key
-      </button>
-      <button type="button" class="btn ghost sm icon" id="btnTheme" aria-label="Ganti mode terang/gelap">
-        <span aria-hidden="true" id="themeIcon">&#9789;</span>
-      </button>
-    </div>
-  </div>
-</header>
-
-<main id="main">
-  <section class="hero wrap">
-    <h1>Buat link ulasan Google untuk usaha Anda</h1>
-    <p class="lede">
-      Cari nama usaha Anda, lalu langsung dapat <strong>link ulasan</strong> yang membuka form bintang 5
-      di Google, plus <strong>QR code</strong> dan <strong>poster siap cetak</strong> untuk ditempel di meja kasir.
-    </p>
-  </section>
-
-  <section class="wrap">
-    <div class="card finder">
-      <div class="tabs" role="tablist" aria-label="Cara mencari usaha">
-        <button class="tab is-active" role="tab" aria-selected="true" aria-controls="pane-search" id="tab-search" type="button">
-          Cari nama usaha
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="/" aria-label="ReviewLink Indonesia">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40"><path d="M20 4l4.6 9.4L35 15l-7.5 7.3 1.8 10.3L20 27.7l-9.3 4.9 1.8-10.3L5 15l10.4-1.6L20 4z"/></svg>
+        </span>
+        <span>Review<span class="brand-accent">Link</span></span>
+      </a>
+      <nav class="header-nav" aria-label="Navigasi utama">
+        <a href="#cara-kerja">Cara kerja</a>
+        <a href="#faq">FAQ</a>
+        <button type="button" class="header-key" id="btnSettings" aria-haspopup="dialog">
+          Pencarian nama
         </button>
-        <button class="tab" role="tab" aria-selected="false" aria-controls="pane-manual" id="tab-manual" type="button">
-          Tempel link Google Maps
-        </button>
-      </div>
-
-      <div class="pane" id="pane-search" role="tabpanel" aria-labelledby="tab-search">
-        <label class="field">
-          <span class="field-label">Nama usaha Anda</span>
-          <div class="input-wrap">
-            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a6 6 0 104.47 10.03l4.25 4.25 1.41-1.41-4.25-4.25A6 6 0 0010 4zm0 2a4 4 0 110 8 4 4 0 010-8z"/></svg>
-            <input type="search" id="q" autocomplete="off" spellcheck="false"
-                   placeholder="Contoh: Warung Sate Pak Budi, Bandung"
-                   aria-describedby="searchHelp">
-            <span class="spinner" id="spinner" hidden aria-hidden="true"></span>
-          </div>
-          <small class="help" id="searchHelp">Ketik minimal 3 huruf. Tambahkan nama kota agar hasilnya tepat.</small>
-        </label>
-        <ul class="results" id="results" aria-label="Hasil pencarian" hidden></ul>
-        <div class="notice" id="searchNotice" hidden></div>
-      </div>
-
-      <div class="pane" id="pane-manual" role="tabpanel" aria-labelledby="tab-manual" hidden>
-        <label class="field">
-          <span class="field-label">Link Google Maps atau Place ID</span>
-          <div class="input-wrap">
-            <svg class="input-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.9 12a3.1 3.1 0 013.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7A3.1 3.1 0 013.9 12zM8 13h8v-2H8v2zm9-6h-4v1.9h4a3.1 3.1 0 010 6.2h-4V17h4a5 5 0 000-10z"/></svg>
-            <input type="text" id="manualInput" autocomplete="off" spellcheck="false"
-                   placeholder="https://maps.app.goo.gl/… atau ChIJ…">
-          </div>
-          <small class="help">
-            Buka Google Maps &rarr; cari usaha Anda &rarr; tombol <em>Bagikan</em> &rarr; <em>Salin tautan</em>, lalu tempel di sini.
-          </small>
-        </label>
-        <button class="btn primary" id="btnResolve" type="button">Proses link</button>
-        <div class="notice" id="manualNotice" hidden></div>
-      </div>
+      </nav>
     </div>
-  </section>
+  </header>
 
-  <section class="wrap output" id="output" hidden>
-    <div class="card place-card" id="placeCard"></div>
-
-    <div class="grid">
-      <div class="card">
-        <h2 class="card-title">Link ulasan Anda</h2>
-
-        <div class="link-row">
-          <div class="link-meta">
-            <span class="badge green">Utama</span>
-            <span class="link-label">Tulis ulasan (langsung buka form bintang)</span>
-          </div>
-          <div class="copybox">
-            <input type="text" id="reviewLink" readonly>
-            <button class="btn copy" type="button" data-copy="reviewLink">Salin</button>
-          </div>
-          <a class="try-link" id="reviewOpen" href="#" target="_blank" rel="noopener">Coba buka link &rarr;</a>
+  <main>
+    <section class="hero">
+      <div class="hero-glow glow-one" aria-hidden="true"></div>
+      <div class="hero-glow glow-two" aria-hidden="true"></div>
+      <div class="shell hero-inner">
+        <p class="eyebrow">GOOGLE REVIEW LINK GENERATOR</p>
+        <h1>
+          Dapatkan link ulasan Google
+          <span class="gradient-text">& QR code gratis</span>
+        </h1>
+        <p class="hero-copy">
+          Buat jalur tercepat agar pelanggan dapat menulis ulasan untuk bisnis Anda.
+          Tanpa login, tanpa instal aplikasi, dan QR langsung siap dipindai.
+        </p>
+        <div class="hero-pills" aria-label="Keunggulan">
+          <span><b aria-hidden="true">✓</b> Gratis</span>
+          <span><b aria-hidden="true">✓</b> Tanpa login</span>
+          <span><b aria-hidden="true">✓</b> QR resolusi tinggi</span>
         </div>
-
-        <div class="link-row">
-          <div class="link-meta">
-            <span class="badge">Alternatif</span>
-            <span class="link-label">Halaman profil &amp; semua ulasan</span>
-          </div>
-          <div class="copybox">
-            <input type="text" id="profileLink" readonly>
-            <button class="btn copy" type="button" data-copy="profileLink">Salin</button>
-          </div>
-        </div>
-
-        <div class="link-row">
-          <div class="link-meta">
-            <span class="badge">Teknis</span>
-            <span class="link-label">Place ID</span>
-          </div>
-          <div class="copybox">
-            <input type="text" id="placeIdOut" readonly>
-            <button class="btn copy" type="button" data-copy="placeIdOut">Salin</button>
-          </div>
-        </div>
-
-        <details class="tips">
-          <summary>Contoh pesan WhatsApp untuk pelanggan</summary>
-          <div class="copybox stack">
-            <textarea id="waText" rows="4" readonly></textarea>
-            <button class="btn copy" type="button" data-copy="waText">Salin pesan</button>
-          </div>
-        </details>
+        <a class="hero-arrow" href="#generator" aria-label="Mulai membuat link ulasan">
+          <span aria-hidden="true">↓</span>
+        </a>
       </div>
+    </section>
 
-      <div class="card qr-card">
-        <h2 class="card-title">QR Code</h2>
-        <div class="qr-preview" id="qrPreview">
-          <canvas id="qrCanvas" width="320" height="320" aria-label="QR code link ulasan"></canvas>
+    <section class="generator-section" id="generator">
+      <div class="shell generator-wrap">
+        <div class="section-heading">
+          <span class="step-number">1</span>
+          <div>
+            <p class="section-kicker">MULAI DI SINI</p>
+            <h2>Temukan bisnis Anda</h2>
+            <p>Ketik nama usaha atau langsung tempel link Google Maps. Satu kolom untuk semuanya.</p>
+          </div>
         </div>
 
-        <div class="qr-opts">
-          <label class="opt">
-            <span>Warna</span>
-            <input type="color" id="qrDark" value="#111827">
-          </label>
-          <label class="opt">
-            <span>Latar</span>
-            <input type="color" id="qrLight" value="#ffffff">
-          </label>
-          <label class="opt">
-            <span>Koreksi galat</span>
-            <select id="qrEcc">
-              <option value="M" selected>M &mdash; standar</option>
-              <option value="Q">Q &mdash; tinggi</option>
-              <option value="H">H &mdash; maksimal</option>
-            </select>
-          </label>
-          <label class="opt check">
-            <input type="checkbox" id="qrTransparent">
-            <span>Latar transparan (PNG)</span>
-          </label>
-        </div>
+        <div class="generator-card">
+          <form class="smart-form" id="smartForm" novalidate>
+            <label class="smart-field" for="smartInput">
+              <span class="sr-only">Nama usaha, link Google Maps, atau Place ID</span>
+              <svg class="smart-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2a8 8 0 00-8 8c0 5.7 6.8 11.4 7.1 11.7a1.3 1.3 0 001.8 0C13.2 21.4 20 15.7 20 10a8 8 0 00-8-8zm0 11.2A3.2 3.2 0 1112 6.8a3.2 3.2 0 010 6.4z"/>
+              </svg>
+              <input
+                type="text"
+                id="smartInput"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Nama usaha + kota, atau tempel link Google Maps"
+                aria-describedby="smartHelp"
+              >
+              <span class="spinner" id="spinner" hidden aria-hidden="true"></span>
+            </label>
+            <button class="primary-action" id="btnGenerate" type="submit">
+              <span id="btnGenerateText">BUAT LINK & QR</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </form>
 
-        <div class="btn-row">
-          <button class="btn primary" type="button" id="dlPng">Unduh PNG 1024px</button>
-          <button class="btn" type="button" id="dlPngBig">PNG 2048px</button>
-          <button class="btn" type="button" id="dlSvg">SVG</button>
-        </div>
-      </div>
-    </div>
+          <div class="quick-actions">
+            <button type="button" class="text-action" id="btnPaste">
+              <span aria-hidden="true">▣</span> Tempel dari clipboard
+            </button>
+            <a class="text-action" id="btnOpenMaps" href="https://www.google.com/maps" target="_blank" rel="noopener">
+              <span aria-hidden="true">↗</span> Buka Google Maps
+            </a>
+            <span class="search-status" id="searchStatus">Memeriksa pencarian nama…</span>
+          </div>
 
-    <div class="card poster-card">
-      <div class="poster-head">
-        <div>
-          <h2 class="card-title">Poster siap cetak</h2>
-          <p class="muted">Ukuran A4. Tempel di kasir, meja, atau kemasan.</p>
-        </div>
-        <button class="btn primary" type="button" id="btnPrint">Cetak / simpan PDF</button>
-      </div>
+          <p class="smart-help" id="smartHelp">
+            Paling mudah: buka bisnis di Google Maps → <b>Bagikan</b> → <b>Salin tautan</b> → tempel di sini.
+          </p>
 
-      <div class="poster-opts">
-        <label class="field sm">
-          <span class="field-label">Judul</span>
-          <input type="text" id="posterTitle" value="Suka dengan layanan kami?">
-        </label>
-        <label class="field sm">
-          <span class="field-label">Ajakan</span>
-          <input type="text" id="posterSub" value="Scan &amp; beri ulasan di Google">
-        </label>
-        <label class="field sm">
-          <span class="field-label">Catatan bawah</span>
-          <input type="text" id="posterFoot" value="Terima kasih atas dukungan Anda &#128153;">
-        </label>
-      </div>
+          <ul class="results" id="results" aria-label="Hasil pencarian bisnis" hidden></ul>
+          <div class="notice" id="smartNotice" role="status" aria-live="polite" hidden></div>
 
-      <div class="poster-scale">
-        <div class="poster-stage">
-          <div class="poster" id="poster">
-            <div class="poster-inner">
-              <p class="poster-title" id="pvTitle">Suka dengan layanan kami?</p>
-              <p class="poster-sub" id="pvSub">Scan &amp; beri ulasan di Google</p>
-              <div class="poster-qr"><canvas id="posterQr" width="900" height="900"></canvas></div>
-              <p class="poster-biz" id="pvBiz"></p>
-              <p class="poster-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
-              <p class="poster-foot" id="pvFoot">Terima kasih atas dukungan Anda</p>
+          <div class="maps-assist" id="mapsAssist" hidden>
+            <div class="assist-icon" aria-hidden="true">G</div>
+            <div class="assist-copy">
+              <h3>Cari nama bisnisnya di Google Maps</h3>
+              <p>
+                Pencarian nama langsung belum diaktifkan. Buka hasil Maps, pilih bisnis Anda,
+                tekan <b>Bagikan → Salin tautan</b>, lalu kembali ke sini.
+              </p>
+            </div>
+            <div class="assist-actions">
+              <a class="btn primary" id="assistOpenMaps" href="https://www.google.com/maps" target="_blank" rel="noopener">Cari di Google Maps</a>
+              <button class="btn" id="assistPaste" type="button">Tempel link hasil salin</button>
             </div>
           </div>
         </div>
+
+        <div class="micro-trust">
+          <span><b aria-hidden="true">✓</b> Tidak menyimpan data bisnis</span>
+          <span><b aria-hidden="true">✓</b> Link resmi Google</span>
+          <span><b aria-hidden="true">✓</b> Cocok untuk HP & desktop</span>
+        </div>
       </div>
+    </section>
+
+    <section class="output-section" id="output" hidden>
+      <div class="shell">
+        <div class="output-heading">
+          <div class="section-heading compact">
+            <span class="step-number success">✓</span>
+            <div>
+              <p class="section-kicker">BERHASIL DIBUAT</p>
+              <h2>Link ulasan dan QR Anda siap</h2>
+              <p>Uji sekali, lalu bagikan ke pelanggan atau unduh untuk dicetak.</p>
+            </div>
+          </div>
+          <button class="btn subtle" type="button" id="btnReset">Buat untuk bisnis lain</button>
+        </div>
+
+        <div class="place-card" id="placeCard"></div>
+
+        <div class="output-grid">
+          <article class="result-card qr-card">
+            <div class="card-label">QR CODE SIAP PAKAI</div>
+            <div class="qr-frame">
+              <canvas id="qrCanvas" width="420" height="420" aria-label="QR code menuju form ulasan Google"></canvas>
+            </div>
+            <div class="qr-status" id="qrStatus">
+              <span class="status-dot" aria-hidden="true"></span>
+              Kontras tinggi · ruang putih aman · siap dipindai
+            </div>
+            <button class="btn primary big" type="button" id="dlPng">Unduh QR PNG</button>
+            <button class="btn big" type="button" id="btnPrint">Cetak poster A4</button>
+            <p class="fine-print">PNG 1200px, latar putih, tanpa logo—format paling aman untuk scan.</p>
+          </article>
+
+          <article class="result-card link-card">
+            <div class="card-label">LINK ULASAN LANGSUNG</div>
+            <h3>Pelanggan langsung masuk ke form ulasan Google</h3>
+            <div class="review-link-box">
+              <input type="text" id="reviewLink" readonly aria-label="Link ulasan Google">
+              <button class="copy-action" type="button" data-copy="reviewLink">Salin</button>
+            </div>
+            <div class="link-actions">
+              <a class="btn primary" id="reviewOpen" href="#" target="_blank" rel="noopener">Uji link sekarang ↗</a>
+              <button class="btn" type="button" id="btnShare">Bagikan</button>
+            </div>
+            <a class="whatsapp-action" id="waShare" href="#" target="_blank" rel="noopener">
+              <span aria-hidden="true">●</span> Kirim permintaan ulasan lewat WhatsApp
+            </a>
+
+            <div class="message-box">
+              <div class="message-head">
+                <span>Pesan siap kirim</span>
+                <button type="button" data-copy="waText">Salin pesan</button>
+              </div>
+              <textarea id="waText" rows="4" readonly aria-label="Pesan permintaan ulasan siap kirim"></textarea>
+            </div>
+
+            <details class="technical">
+              <summary>Detail teknis</summary>
+              <label>Profil Google Maps</label>
+              <div class="mini-copy"><input type="text" id="profileLink" readonly><button type="button" data-copy="profileLink">Salin</button></div>
+              <label>Place ID</label>
+              <div class="mini-copy"><input type="text" id="placeIdOut" readonly><button type="button" data-copy="placeIdOut">Salin</button></div>
+            </details>
+          </article>
+        </div>
+
+        <details class="poster-editor" id="posterEditor">
+          <summary>Atur teks poster sebelum dicetak</summary>
+          <div class="poster-controls">
+            <label><span>Judul</span><input type="text" id="posterTitle" value="Puas dengan layanan kami?"></label>
+            <label><span>Ajakan</span><input type="text" id="posterSub" value="Scan untuk beri ulasan di Google"></label>
+            <label><span>Catatan</span><input type="text" id="posterFoot" value="Terima kasih atas dukungan Anda"></label>
+          </div>
+          <div class="poster-scale">
+            <div class="poster-stage">
+              <div class="poster" id="poster">
+                <div class="poster-inner">
+                  <div class="poster-brand">REVIEW<span>LINK</span></div>
+                  <p class="poster-title" id="pvTitle">Puas dengan layanan kami?</p>
+                  <p class="poster-sub" id="pvSub">Scan untuk beri ulasan di Google</p>
+                  <div class="poster-qr"><canvas id="posterQr" width="900" height="900"></canvas></div>
+                  <p class="poster-biz" id="pvBiz"></p>
+                  <p class="poster-stars" aria-hidden="true">★★★★★</p>
+                  <p class="poster-foot" id="pvFoot">Terima kasih atas dukungan Anda</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="how-section" id="cara-kerja">
+      <div class="shell">
+        <div class="center-heading">
+          <p class="section-kicker">MUDAH DIPAKAI</p>
+          <h2>Tiga langkah, selesai</h2>
+        </div>
+        <div class="how-grid">
+          <article><span>1</span><h3>Temukan bisnis</h3><p>Ketik nama bisnis atau tempel link yang disalin dari Google Maps.</p></article>
+          <article><span>2</span><h3>Uji link</h3><p>Pastikan link membuka form ulasan untuk bisnis yang benar.</p></article>
+          <article><span>3</span><h3>Bagikan QR</h3><p>Unduh QR atau cetak poster dan letakkan di lokasi yang mudah terlihat.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq">
+      <div class="shell faq-shell">
+        <div>
+          <p class="section-kicker">PERTANYAAN UMUM</p>
+          <h2>Yang perlu Anda tahu</h2>
+          <p class="faq-intro">Alat ini membuat tautan resmi Google dan QR berkontras tinggi agar mudah dipindai.</p>
+        </div>
+        <div class="faq-list">
+          <details><summary>Apakah ini gratis?</summary><p>Ya. Mode tempel link Google Maps, pembuatan link, QR, dan poster dapat digunakan tanpa login.</p></details>
+          <details><summary>Kenapa pencarian nama kadang tidak tersedia?</summary><p>Pencarian nama langsung membutuhkan Google Places API. Tanpa API itu, gunakan tombol Buka Google Maps lalu salin link bisnis—hasil link ulasan dan QR tetap sama.</p></details>
+          <details><summary>Apakah QR code bisa dipindai dari semua HP?</summary><p>QR dibuat hitam-putih dengan ruang tepi empat modul dan tanpa logo. Format ini paling kompatibel untuk kamera Android maupun iPhone.</p></details>
+          <details><summary>Apakah data bisnis disimpan?</summary><p>Tidak. Pemrosesan berlangsung saat Anda menggunakan alat dan kami tidak membuat akun ataupun menyimpan daftar bisnis.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <div><b>ReviewLink</b><p>Dibuat untuk membantu UMKM Indonesia mendapatkan ulasan jujur.</p></div>
+      <button type="button" id="footerSettings">Aktifkan pencarian nama dengan API key</button>
+      <p class="disclaimer">Tidak berafiliasi dengan Google LLC.</p>
     </div>
-  </section>
+  </footer>
 
-  <section class="wrap faq">
-    <h2>Pertanyaan umum</h2>
-    <details>
-      <summary>Kenapa perlu API key Google?</summary>
-      <p>
-        Fitur <em>cari nama usaha</em> memakai Google Places API. Kalau pemilik situs sudah memasang key di server,
-        Anda tidak perlu apa-apa. Kalau belum, Anda bisa memasang key sendiri lewat tombol
-        <strong>API Key</strong> di pojok kanan atas &mdash; key disimpan di browser Anda saja, tidak dikirim ke mana pun
-        selain ke Google lewat situs ini.
-      </p>
-      <p>Tanpa key pun tetap bisa: pakai tab <strong>Tempel link Google Maps</strong>.</p>
-    </details>
-    <details>
-      <summary>Apakah link ini resmi dari Google?</summary>
-      <p>
-        Ya, formatnya <code>search.google.com/local/writereview?placeid=…</code> &mdash; URL milik Google yang
-        langsung membuka kotak dialog tulis ulasan untuk usaha tersebut. Situs ini hanya membantu menyusunnya.
-      </p>
-    </details>
-    <details>
-      <summary>Usaha saya tidak muncul di pencarian</summary>
-      <p>
-        Pastikan profil usaha Anda sudah terdaftar dan terverifikasi di Google Bisnis Profil.
-        Coba tambahkan nama kota/kecamatan. Kalau tetap tidak ketemu, buka Google Maps, cari usaha Anda,
-        tekan <em>Bagikan &rarr; Salin tautan</em>, lalu tempel di tab kedua.
-      </p>
-    </details>
-    <details>
-      <summary>Boleh minta ulasan ke pelanggan?</summary>
-      <p>
-        Boleh, selama tidak memaksa atau memberi imbalan untuk ulasan positif &mdash; itu melanggar kebijakan Google
-        dan bisa membuat ulasan dihapus. Ajak semua pelanggan memberi ulasan jujur.
-      </p>
-    </details>
-  </section>
-</main>
+  <dialog id="dlgSettings">
+    <form method="dialog" class="dialog-form">
+      <button class="dialog-close" value="cancel" type="submit" aria-label="Tutup">×</button>
+      <p class="section-kicker">OPSIONAL</p>
+      <h2>Aktifkan pencarian nama usaha</h2>
+      <p>Masukkan Google Places API key. Key hanya disimpan di browser ini dan dikirim ke API situs melalui koneksi HTTPS.</p>
+      <label class="dialog-field"><span>Google Places API key</span><input type="password" id="apiKeyInput" placeholder="AIza…" autocomplete="off"></label>
+      <p class="dialog-note">Aktifkan <b>Places API (New)</b>, batasi key ke API tersebut, dan pasang kuota harian.</p>
+      <div class="dialog-actions">
+        <button class="btn subtle" id="btnClearKey" value="clear" type="submit">Hapus key</button>
+        <button class="btn primary" id="btnSaveKey" value="save" type="submit">Simpan API key</button>
+      </div>
+    </form>
+  </dialog>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <p>Dibuat untuk UMKM Indonesia. Tidak berafiliasi dengan Google LLC.</p>
-    <p class="muted small">Data usaha diambil langsung dari Google Places API. Tidak ada data yang kami simpan.</p>
-  </div>
-</footer>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-<dialog id="dlgSettings">
-  <form method="dialog" class="dlg-form">
-    <h2>Google Places API key</h2>
-    <p class="muted small">
-      Diperlukan hanya untuk fitur pencarian nama usaha. Key disimpan di
-      <code>localStorage</code> browser ini.
-    </p>
-    <label class="field">
-      <span class="field-label">API key</span>
-      <input type="password" id="apiKeyInput" placeholder="AIza…" autocomplete="off">
-    </label>
-    <p class="muted small">
-      Aktifkan <strong>Places API (New)</strong> di Google Cloud Console, lalu batasi key ke API itu saja
-      dan pasang batas kuota harian.
-    </p>
-    <div class="btn-row end">
-      <button class="btn ghost" value="cancel" type="submit">Tutup</button>
-      <button class="btn danger ghost" id="btnClearKey" value="clear" type="submit">Hapus key</button>
-      <button class="btn primary" id="btnSaveKey" value="save" type="submit">Simpan</button>
-    </div>
-  </form>
-</dialog>
-
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-
-<script src="/vendor/qrcode.min.js"></script>
-<script src="/assets/app.js" type="module"></script>
+  <script src="/vendor/qrcode.min.js"></script>
+  <script src="/assets/app.js" type="module"></script>
 </body>
 </html>

@@ -1,27 +1,25 @@
-/* Generator Link Ulasan Google — frontend */
+/* ReviewLink Indonesia — satu kolom, satu QR, tanpa langkah yang membingungkan. */
 
 const QR = (window.QRCodeLib && (window.QRCodeLib.default || window.QRCodeLib)) || null;
-
 const $ = (id) => document.getElementById(id);
 const KEY_STORE = 'grlg:apikey';
-const THEME_STORE = 'grlg:theme';
 
 const state = {
-  place: null,          // { id, name, address, rating, ratingCount }
+  place: null,
   reviewUrl: '',
-  serverKey: null,      // null = belum dicek, true/false = hasil cek
+  serverKey: null,
+  busy: false,
 };
 
-/* ------------------------------------------------------------------ utils */
+function read(key) {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
 
 function store(key, value) {
   try {
-    if (value === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, value);
-  } catch { /* private mode */ }
-}
-function read(key) {
-  try { return localStorage.getItem(key); } catch { return null; }
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch { /* localStorage mungkin diblokir browser */ }
 }
 
 let toastTimer;
@@ -30,19 +28,26 @@ function toast(message) {
   el.textContent = message;
   el.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.hidden = true; }, 2200);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2400);
 }
 
-function notice(el, message, isError = false) {
-  if (!message) { el.hidden = true; el.textContent = ''; return; }
-  el.hidden = false;
+function notice(message = '', isError = false) {
+  const el = $('smartNotice');
+  el.textContent = message;
   el.classList.toggle('err', isError);
-  el.innerHTML = message;
+  el.hidden = !message;
 }
 
-function debounce(fn, ms) {
-  let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+function setBusy(busy, label = 'BUAT LINK & QR') {
+  state.busy = busy;
+  $('smartInput').disabled = busy;
+  $('btnGenerate').disabled = busy;
+  $('spinner').hidden = !busy;
+  $('btnGenerateText').textContent = busy ? 'MEMPROSES…' : label;
+}
+
+function hasSearchKey() {
+  return state.serverKey === true || Boolean(read(KEY_STORE));
 }
 
 async function api(path, options = {}) {
@@ -50,386 +55,471 @@ async function api(path, options = {}) {
   const userKey = read(KEY_STORE);
   if (userKey) headers['X-Places-Key'] = userKey;
 
-  const res = await fetch(path, { ...options, headers });
+  const response = await fetch(path, { ...options, headers });
   let data = {};
-  try { data = await res.json(); } catch { /* non-json */ }
-  if (!res.ok) throw Object.assign(new Error(data.error || `Gagal (${res.status})`), { data });
+  try { data = await response.json(); } catch { /* respons non-JSON */ }
+  if (!response.ok) {
+    const error = new Error(data.error || `Permintaan gagal (${response.status}).`);
+    error.data = data;
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
-/* ------------------------------------------------------------------ theme */
-
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme;
-  $('themeIcon').innerHTML = theme === 'dark' ? '&#9788;' : '&#9789;';
-  store(THEME_STORE, theme);
+function looksLikeMapInput(value) {
+  return /^(https?:\/\/|www\.)/i.test(value)
+    || /(?:place_?id|!\d+s(?:Ch|Gh|Ei|El|Ek|Ea))/i.test(value)
+    || /^(?:Ch|Gh|Ei|El|Ek|Ea)[A-Za-z0-9_-]{15,}$/.test(value);
 }
-(function initTheme() {
-  const saved = read(THEME_STORE);
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  applyTheme(saved || (prefersDark ? 'dark' : 'light'));
-})();
-$('btnTheme').addEventListener('click', () => {
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-});
 
-/* ------------------------------------------------------------------- tabs */
+function mapsSearchUrl(query = '') {
+  const trimmed = query.trim();
+  return trimmed
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmed)}`
+    : 'https://www.google.com/maps';
+}
 
-const tabs = [
-  { tab: $('tab-search'), pane: $('pane-search') },
-  { tab: $('tab-manual'), pane: $('pane-manual') },
-];
-tabs.forEach(({ tab }, i) => {
-  tab.addEventListener('click', () => {
-    tabs.forEach(({ tab: t, pane: p }, j) => {
-      const active = i === j;
-      t.classList.toggle('is-active', active);
-      t.setAttribute('aria-selected', String(active));
-      p.hidden = !active;
-    });
-  });
-});
-/* ---------------------------------------------------------------- API key */
+function updateMapsLinks() {
+  const href = mapsSearchUrl($('smartInput').value);
+  $('btnOpenMaps').href = href;
+  $('assistOpenMaps').href = href;
+}
 
-const dlg = $('dlgSettings');
-$('btnSettings').addEventListener('click', () => {
-  $('apiKeyInput').value = read(KEY_STORE) || '';
-  dlg.showModal();
-});
-dlg.addEventListener('close', () => {
-  if (dlg.returnValue === 'save') {
-    const value = $('apiKeyInput').value.trim();
-    store(KEY_STORE, value || null);
-    toast(value ? 'API key disimpan' : 'API key dikosongkan');
-    notice($('searchNotice'), '');
-  } else if (dlg.returnValue === 'clear') {
-    store(KEY_STORE, null);
-    toast('API key dihapus');
+function showAssist(show, query = '') {
+  $('mapsAssist').hidden = !show;
+  if (query) {
+    const href = mapsSearchUrl(query);
+    $('btnOpenMaps').href = href;
+    $('assistOpenMaps').href = href;
   }
-});
+}
 
-/* ------------------------------------------------------------- pencarian */
+function showResults(items = []) {
+  const list = $('results');
+  list.replaceChildren();
 
-const results = $('results');
-const qInput = $('q');
-
-function showResults(items) {
-  results.innerHTML = '';
-  if (!items.length) {
-    results.hidden = true;
-    return;
-  }
   for (const item of items) {
     const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    const main = document.createElement('span');
-    main.className = 'res-main';
-    main.textContent = item.main;
-    const sub = document.createElement('span');
-    sub.className = 'res-sub';
-    sub.textContent = item.secondary || '';
-    btn.append(main, sub);
-    btn.addEventListener('click', () => selectPlace(item.placeId, item.main, item.secondary));
-    li.append(btn);
-    results.append(li);
+    const button = document.createElement('button');
+    button.type = 'button';
+
+    const name = document.createElement('span');
+    name.className = 'res-main';
+    name.textContent = item.main || 'Bisnis tanpa nama';
+
+    const address = document.createElement('span');
+    address.className = 'res-sub';
+    address.textContent = item.secondary || '';
+
+    button.append(name, address);
+    button.addEventListener('click', () => {
+      selectPlace(item.placeId, item.main, item.secondary);
+    });
+    li.append(button);
+    list.append(li);
   }
-  results.hidden = false;
+
+  list.hidden = items.length === 0;
 }
 
-const runSearch = debounce(async (term) => {
-  $('spinner').hidden = false;
-  try {
-    const data = await api(`/api/search?q=${encodeURIComponent(term)}`);
-    state.serverKey = true;
-    notice($('searchNotice'), '');
-    showResults(data.results || []);
-    if (!(data.results || []).length) {
-      notice($('searchNotice'),
-        'Tidak ada hasil. Coba tambahkan nama kota, atau pakai tab <b>Tempel link Google Maps</b>.');
-    }
-  } catch (err) {
-    showResults([]);
-    if (err.data && err.data.code === 'NO_KEY') {
-      state.serverKey = false;
-      notice($('searchNotice'),
-        'Pencarian nama usaha butuh Google Places API key. ' +
-        'Pasang key Anda lewat tombol <b>API Key</b> di atas, atau gunakan tab ' +
-        '<b>Tempel link Google Maps</b> yang tidak butuh key sama sekali.', true);
-    } else {
-      notice($('searchNotice'), err.message || 'Pencarian gagal.', true);
-    }
-  } finally {
-    $('spinner').hidden = true;
+async function submitSmart(event) {
+  event?.preventDefault();
+  if (state.busy) return;
+
+  const input = $('smartInput').value.trim();
+  showResults();
+  showAssist(false);
+  notice();
+
+  if (!input) {
+    notice('Ketik nama bisnis atau tempel link yang disalin dari Google Maps.', true);
+    $('smartInput').focus();
+    return;
   }
-}, 350);
 
-qInput.addEventListener('input', () => {
-  const term = qInput.value.trim();
-  if (term.length < 3) { showResults([]); notice($('searchNotice'), ''); return; }
-  runSearch(term);
-});
-
-document.addEventListener('click', (event) => {
-  if (!results.hidden && !results.contains(event.target) && event.target !== qInput) {
-    showResults([]);
+  if (looksLikeMapInput(input)) {
+    await resolveMapInput(input);
+    return;
   }
-});
 
-/* --------------------------------------------------------- mode manual */
+  if (state.serverKey === null) await probeStatus();
+  if (!hasSearchKey()) {
+    showAssist(true, input);
+    notice('Pencarian nama memerlukan Google Places API. Gunakan tombol “Cari di Google Maps”, lalu tempel link hasil Bagikan.');
+    return;
+  }
 
-$('btnResolve').addEventListener('click', resolveManual);
-$('manualInput').addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') { event.preventDefault(); resolveManual(); }
-});
+  await searchByName(input);
+}
 
-async function resolveManual() {
-  const input = $('manualInput').value.trim();
-  if (!input) { notice($('manualNotice'), 'Tempel dulu link Google Maps Anda.', true); return; }
-  const btn = $('btnResolve');
-  btn.disabled = true;
-  btn.textContent = 'Memproses…';
-  notice($('manualNotice'), '');
+async function resolveMapInput(input) {
+  setBusy(true);
   try {
-    const data = await api('/api/resolve', { method: 'POST', body: JSON.stringify({ input }) });
-    if (!data.placeId) throw new Error(data.error || 'Place ID tidak ditemukan di link tersebut.');
+    const data = await api('/api/resolve', {
+      method: 'POST',
+      body: JSON.stringify({ input }),
+    });
+    if (!data.placeId) throw new Error('Place ID tidak ditemukan di link tersebut.');
     await selectPlace(data.placeId, data.name || '', data.address || '');
-    if (data.warning) notice($('manualNotice'), data.warning);
-  } catch (err) {
-    notice($('manualNotice'),
-      (err.message || 'Gagal memproses link.') +
-      '<br><br>Tips: pakai link dari tombol <b>Bagikan &rarr; Salin tautan</b> di aplikasi Google Maps. ' +
-      'Link yang disalin dari address bar browser desktop juga bisa.', true);
+    if (data.warning) notice(data.warning);
+  } catch (error) {
+    notice(
+      `${error.message || 'Link belum bisa diproses.'} Coba salin ulang dari Google Maps melalui Bagikan → Salin tautan.`,
+      true,
+    );
+    showAssist(true);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Proses link';
+    setBusy(false);
   }
 }
 
-/* ------------------------------------------------------- pilih & render */
-
-async function selectPlace(placeId, fallbackName = '', fallbackAddress = '') {
-  showResults([]);
-  state.place = {
-    id: placeId,
-    name: fallbackName || 'Usaha Anda',
-    address: fallbackAddress || '',
-    rating: null,
-    ratingCount: null,
-  };
-  render();
-
-  // Lengkapi detail (nama resmi, alamat, rating) bila key tersedia — opsional.
-  if (state.serverKey === false && !read(KEY_STORE)) return;
+async function searchByName(query) {
+  setBusy(true);
   try {
-    const detail = await api(`/api/place?id=${encodeURIComponent(placeId)}`);
-    if (detail && detail.id) {
-      state.place = {
-        id: detail.id,
-        name: detail.name || state.place.name,
-        address: detail.address || state.place.address,
-        rating: detail.rating ?? null,
-        ratingCount: detail.ratingCount ?? null,
-      };
-      render();
+    const data = await api(`/api/search?q=${encodeURIComponent(query)}`);
+    state.serverKey = true;
+    const items = data.results || [];
+    showResults(items);
+    if (!items.length) {
+      notice('Bisnis belum ditemukan. Tambahkan nama kota, atau cari lewat Google Maps lalu tempel linknya.');
+      showAssist(true, query);
+    } else {
+      notice('Pilih bisnis yang benar dari hasil berikut.');
     }
-  } catch { /* detail opsional, link tetap jalan tanpa ini */ }
+    updateSearchStatus();
+  } catch (error) {
+    if (error.data?.code === 'NO_KEY') {
+      state.serverKey = false;
+      showAssist(true, query);
+      notice('Pencarian nama belum aktif. Cari bisnis di Google Maps, lalu tempel link hasil Bagikan.');
+      updateSearchStatus();
+    } else {
+      notice(error.message || 'Pencarian gagal. Silakan coba lagi.', true);
+    }
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function pasteFromClipboard() {
+  try {
+    const text = (await navigator.clipboard.readText()).trim();
+    if (!text) throw new Error('Clipboard kosong.');
+    $('smartInput').value = text;
+    updateMapsLinks();
+    await submitSmart();
+  } catch (error) {
+    $('smartInput').focus();
+    notice(`${error.message || 'Browser tidak mengizinkan akses clipboard.'} Tekan Ctrl+V di kolom di atas.`, true);
+  }
 }
 
 function reviewUrlFor(placeId) {
   return `https://search.google.com/local/writereview?placeid=${encodeURIComponent(placeId)}`;
 }
+
 function profileUrlFor(placeId) {
   return `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(placeId)}`;
 }
 
-function render() {
-  const place = state.place;
-  if (!place) return;
+async function selectPlace(placeId, fallbackName = '', fallbackAddress = '') {
+  showResults();
+  showAssist(false);
+  notice();
 
-  state.reviewUrl = reviewUrlFor(place.id);
+  state.place = {
+    id: placeId,
+    name: fallbackName || 'Bisnis Anda',
+    address: fallbackAddress || '',
+    rating: null,
+    ratingCount: null,
+  };
+  renderOutput();
 
+  if (!hasSearchKey()) return;
+  try {
+    const detail = await api(`/api/place?id=${encodeURIComponent(placeId)}`);
+    if (!detail?.id) return;
+    state.place = {
+      id: detail.id,
+      name: detail.name || state.place.name,
+      address: detail.address || state.place.address,
+      rating: detail.rating ?? null,
+      ratingCount: detail.ratingCount ?? null,
+    };
+    renderOutput(false);
+  } catch { /* detail hanya pelengkap; link dan QR sudah valid */ }
+}
+
+function renderPlaceCard(place) {
   const card = $('placeCard');
-  card.innerHTML = '';
+  card.replaceChildren();
+
+  const badge = document.createElement('span');
+  badge.className = 'place-pin';
+  badge.textContent = 'G';
+  badge.setAttribute('aria-hidden', 'true');
+
   const info = document.createElement('div');
   info.className = 'place-info';
   const name = document.createElement('p');
   name.className = 'place-name';
   name.textContent = place.name;
   info.append(name);
+
   if (place.address) {
-    const addr = document.createElement('p');
-    addr.className = 'place-addr';
-    addr.textContent = place.address;
-    info.append(addr);
+    const address = document.createElement('p');
+    address.className = 'place-addr';
+    address.textContent = place.address;
+    info.append(address);
   }
-  if (place.rating) {
+
+  if (Number.isFinite(place.rating)) {
     const rating = document.createElement('span');
     rating.className = 'place-rating';
-    rating.textContent = `★ ${place.rating.toFixed(1)}` +
-      (place.ratingCount ? ` · ${place.ratingCount} ulasan` : '');
+    rating.textContent = `★ ${place.rating.toFixed(1)}${place.ratingCount ? ` · ${place.ratingCount} ulasan` : ''}`;
     info.append(rating);
   }
-  card.append(info);
+
+  const check = document.createElement('span');
+  check.className = 'place-check';
+  check.textContent = '✓';
+  check.setAttribute('aria-label', 'Bisnis dipilih');
+  card.append(badge, info, check);
+}
+
+function renderOutput(scroll = true) {
+  const place = state.place;
+  if (!place) return;
+
+  state.reviewUrl = reviewUrlFor(place.id);
+  renderPlaceCard(place);
 
   $('reviewLink').value = state.reviewUrl;
+  $('reviewOpen').href = state.reviewUrl;
   $('profileLink').value = profileUrlFor(place.id);
   $('placeIdOut').value = place.id;
-  $('reviewOpen').href = state.reviewUrl;
-  $('waText').value =
-    `Halo! Terima kasih sudah mampir ke ${place.name}. ` +
-    `Kalau berkenan, boleh bantu kami dengan ulasan singkat di Google? ` +
-    `Cukup klik: ${state.reviewUrl}`;
 
+  const message = `Halo! Terima kasih sudah berkunjung ke ${place.name}. Kalau berkenan, bantu kami dengan ulasan singkat di Google melalui link ini: ${state.reviewUrl}`;
+  $('waText').value = message;
+  $('waShare').href = `https://wa.me/?text=${encodeURIComponent(message)}`;
   $('pvBiz').textContent = place.name;
   $('output').hidden = false;
 
-  const url = new URL(location.href);
-  url.searchParams.set('place_id', place.id);
-  history.replaceState(null, '', url);
+  const pageUrl = new URL(location.href);
+  pageUrl.searchParams.set('place_id', place.id);
+  history.replaceState(null, '', pageUrl);
 
   drawQr();
   requestAnimationFrame(fitPoster);
+  if (scroll) $('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/* ------------------------------------------------------------------- QR */
-
 function qrOptions(width) {
-  const transparent = $('qrTransparent').checked;
   return {
     width,
-    margin: 2,
-    errorCorrectionLevel: $('qrEcc').value,
-    color: {
-      dark: $('qrDark').value,
-      light: transparent ? '#00000000' : $('qrLight').value,
-    },
+    margin: 4,
+    errorCorrectionLevel: 'M',
+    color: { dark: '#101010', light: '#ffffff' },
   };
 }
 
-/** qrcode menulis width/height inline di canvas; buang supaya CSS yang menentukan ukuran tampil. */
-function paint(canvasId, options, done) {
-  const canvas = $(canvasId);
-  QR.toCanvas(canvas, state.reviewUrl, options, (err) => {
-    if (err) { console.error(err); return; }
-    canvas.style.removeProperty('width');
-    canvas.style.removeProperty('height');
-    if (done) done();
+function paintQr(canvas, width) {
+  return new Promise((resolve, reject) => {
+    QR.toCanvas(canvas, state.reviewUrl, qrOptions(width), (error) => {
+      if (error) reject(error);
+      else {
+        canvas.style.removeProperty('width');
+        canvas.style.removeProperty('height');
+        resolve();
+      }
+    });
   });
 }
 
-function drawQr() {
-  if (!state.reviewUrl || !QR) return;
-  paint('qrCanvas', qrOptions(320));
-  paint('posterQr',
-    { ...qrOptions(900), color: { dark: $('qrDark').value, light: '#ffffff' } },
-    fitPoster);
-}
+async function drawQr() {
+  if (!state.reviewUrl) return;
+  if (!QR) {
+    $('qrStatus').textContent = 'QR gagal dimuat. Muat ulang halaman lalu coba lagi.';
+    return;
+  }
 
-['qrDark', 'qrLight', 'qrEcc', 'qrTransparent'].forEach((id) => {
-  $(id).addEventListener('input', drawQr);
-});
-
-function download(href, filename) {
-  const a = document.createElement('a');
-  a.href = href;
-  a.download = filename;
-  document.body.append(a);
-  a.click();
-  a.remove();
+  $('qrStatus').textContent = 'Membuat QR…';
+  try {
+    await Promise.all([
+      paintQr($('qrCanvas'), 420),
+      paintQr($('posterQr'), 900),
+    ]);
+    $('qrStatus').replaceChildren();
+    const dot = document.createElement('span');
+    dot.className = 'status-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    $('qrStatus').append(dot, ' Teruji: kontras tinggi · ruang putih aman · siap dipindai');
+    fitPoster();
+  } catch (error) {
+    console.error(error);
+    $('qrStatus').textContent = 'QR gagal dibuat. Muat ulang halaman lalu coba lagi.';
+  }
 }
 
 function slug(text) {
-  return (text || 'usaha').toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '').slice(0, 40) || 'usaha';
+  return (text || 'bisnis').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '').slice(0, 44) || 'bisnis';
 }
 
-async function downloadPng(size) {
-  if (!state.reviewUrl) return;
+function download(href, filename) {
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+}
+
+async function downloadQr() {
+  if (!state.reviewUrl || !QR) return;
   try {
-    const dataUrl = await QR.toDataURL(state.reviewUrl, qrOptions(size));
-    download(dataUrl, `qr-ulasan-${slug(state.place.name)}-${size}.png`);
-    toast(`QR ${size}px diunduh`);
-  } catch (err) {
-    toast('Gagal membuat PNG');
-    console.error(err);
+    const dataUrl = await QR.toDataURL(state.reviewUrl, qrOptions(1200));
+    download(dataUrl, `qr-ulasan-${slug(state.place?.name)}.png`);
+    toast('QR PNG 1200px berhasil diunduh');
+  } catch (error) {
+    console.error(error);
+    toast('QR gagal diunduh');
   }
 }
 
-$('dlPng').addEventListener('click', () => downloadPng(1024));
-$('dlPngBig').addEventListener('click', () => downloadPng(2048));
-$('dlSvg').addEventListener('click', async () => {
-  if (!state.reviewUrl) return;
+async function copyValue(field) {
   try {
-    const svg = await QR.toString(state.reviewUrl, { ...qrOptions(1024), type: 'svg' });
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    download(url, `qr-ulasan-${slug(state.place.name)}.svg`);
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast('QR SVG diunduh');
-  } catch (err) {
-    toast('Gagal membuat SVG');
-    console.error(err);
+    await navigator.clipboard.writeText(field.value);
+  } catch {
+    field.focus();
+    field.select();
+    document.execCommand('copy');
   }
+  toast('Berhasil disalin');
+}
+
+async function shareReview() {
+  if (!state.reviewUrl) return;
+  const shareData = {
+    title: `Ulas ${state.place?.name || 'bisnis ini'} di Google`,
+    text: `Bantu beri ulasan untuk ${state.place?.name || 'bisnis ini'} di Google.`,
+    url: state.reviewUrl,
+  };
+  if (navigator.share) {
+    try { await navigator.share(shareData); } catch (error) {
+      if (error.name !== 'AbortError') await copyValue($('reviewLink'));
+    }
+  } else {
+    await copyValue($('reviewLink'));
+  }
+}
+
+function resetGenerator() {
+  state.place = null;
+  state.reviewUrl = '';
+  $('output').hidden = true;
+  $('smartInput').value = '';
+  showResults();
+  showAssist(false);
+  notice();
+  updateMapsLinks();
+
+  const pageUrl = new URL(location.href);
+  pageUrl.searchParams.delete('place_id');
+  history.replaceState(null, '', pageUrl);
+  $('generator').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('smartInput').focus({ preventScroll: true });
+}
+
+function openSettings() {
+  $('apiKeyInput').value = read(KEY_STORE) || '';
+  $('dlgSettings').showModal();
+}
+
+function updateSearchStatus() {
+  const status = $('searchStatus');
+  if (hasSearchKey()) {
+    status.textContent = '● Pencarian nama aktif';
+    status.classList.add('ready');
+  } else {
+    status.textContent = '● Mode link Maps siap';
+    status.classList.remove('ready');
+  }
+}
+
+async function probeStatus() {
+  try {
+    const data = await api('/api/status');
+    state.serverKey = Boolean(data.searchAvailable);
+  } catch {
+    state.serverKey = false;
+  }
+  updateSearchStatus();
+}
+
+function fitPoster() {
+  const poster = $('poster');
+  const box = poster?.closest('.poster-scale');
+  if (!poster || !box || !poster.offsetWidth || !box.clientWidth) return;
+  const style = getComputedStyle(box);
+  const available = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+  box.style.setProperty('--poster-scale', Math.min(1, available / poster.offsetWidth).toFixed(4));
+}
+
+$('smartForm').addEventListener('submit', submitSmart);
+$('smartInput').addEventListener('input', () => {
+  showResults();
+  showAssist(false);
+  notice();
+  updateMapsLinks();
 });
+$('btnPaste').addEventListener('click', pasteFromClipboard);
+$('assistPaste').addEventListener('click', pasteFromClipboard);
+$('btnSettings').addEventListener('click', openSettings);
+$('footerSettings').addEventListener('click', openSettings);
+$('btnReset').addEventListener('click', resetGenerator);
+$('dlPng').addEventListener('click', downloadQr);
+$('btnPrint').addEventListener('click', () => window.print());
+$('btnShare').addEventListener('click', shareReview);
 
-/* --------------------------------------------------------------- poster */
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-copy]');
+  if (button) copyValue($(button.dataset.copy));
+  if (!$('results').hidden && !event.target.closest('.generator-card')) showResults();
+});
 
 const posterFields = [
   ['posterTitle', 'pvTitle'],
   ['posterSub', 'pvSub'],
   ['posterFoot', 'pvFoot'],
 ];
-posterFields.forEach(([input, preview]) => {
-  $(input).addEventListener('input', () => { $(preview).textContent = $(input).value; });
-});
-$('btnPrint').addEventListener('click', () => window.print());
-
-function fitPoster() {
-  const poster = $('poster');
-  const box = poster.closest('.poster-scale');
-  if (!poster || !box || !poster.offsetWidth || !box.clientWidth) return;
-  const style = getComputedStyle(box);
-  const available = box.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-  const scale = Math.min(1, available / poster.offsetWidth);
-  box.style.setProperty('--poster-scale', scale.toFixed(4));
+for (const [inputId, previewId] of posterFields) {
+  $(inputId).addEventListener('input', () => {
+    $(previewId).textContent = $(inputId).value;
+  });
 }
-window.addEventListener('resize', debounce(fitPoster, 120));
+window.addEventListener('resize', () => requestAnimationFrame(fitPoster));
 
-/* ---------------------------------------------------------------- salin */
-
-document.addEventListener('click', async (event) => {
-  const btn = event.target.closest('[data-copy]');
-  if (!btn) return;
-  const field = $(btn.dataset.copy);
-  try {
-    await navigator.clipboard.writeText(field.value);
-  } catch {
-    field.select();
-    document.execCommand('copy');
+$('dlgSettings').addEventListener('close', async () => {
+  if ($('dlgSettings').returnValue === 'save') {
+    const value = $('apiKeyInput').value.trim();
+    store(KEY_STORE, value);
+    toast(value ? 'API key disimpan di browser ini' : 'API key dikosongkan');
+    state.serverKey = null;
+    await probeStatus();
+  } else if ($('dlgSettings').returnValue === 'clear') {
+    store(KEY_STORE, null);
+    state.serverKey = null;
+    toast('API key dihapus');
+    await probeStatus();
   }
-  toast('Tersalin ke clipboard');
 });
 
-/* ------------------------------------------------------- state dari URL */
-
-(function initFromUrl() {
+(async function init() {
+  updateMapsLinks();
+  await probeStatus();
   const placeId = new URL(location.href).searchParams.get('place_id');
-  if (placeId) selectPlace(placeId);
-})();
-
-/* --------------------------------------------- cek ketersediaan key server */
-
-(async function probeKey() {
-  try {
-    const data = await api('/api/status');
-    state.serverKey = !!data.searchAvailable;
-    if (!state.serverKey && !read(KEY_STORE)) {
-      notice($('searchNotice'),
-        'Pencarian nama usaha belum aktif di situs ini (butuh Google Places API key). ' +
-        'Anda bisa memasang key sendiri lewat tombol <b>API Key</b>, atau langsung pakai tab ' +
-        '<b>Tempel link Google Maps</b> &mdash; cara itu tidak butuh key.');
-      qInput.placeholder = 'Butuh API key — atau pakai tab sebelah';
-    }
-  } catch { /* biarkan; error sebenarnya muncul saat mencari */ }
+  if (placeId) await selectPlace(placeId);
 })();
