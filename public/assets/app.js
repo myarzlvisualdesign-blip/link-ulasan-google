@@ -117,14 +117,12 @@ function showResults(items) {
   results.innerHTML = '';
   if (!items.length) {
     results.hidden = true;
-    qInput.setAttribute('aria-expanded', 'false');
     return;
   }
   for (const item of items) {
     const li = document.createElement('li');
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.setAttribute('role', 'option');
     const main = document.createElement('span');
     main.className = 'res-main';
     main.textContent = item.main;
@@ -137,7 +135,6 @@ function showResults(items) {
     results.append(li);
   }
   results.hidden = false;
-  qInput.setAttribute('aria-expanded', 'true');
 }
 
 const runSearch = debounce(async (term) => {

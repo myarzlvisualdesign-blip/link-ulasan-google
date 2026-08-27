@@ -1,7 +1,7 @@
 import { json, fail, placesKey } from '../../lib/http.js';
 import { textSearch } from '../../lib/places.js';
 import {
-  extractPlaceId, extractCid, nameFromUrl,
+  extractPlaceId, extractPlaceIdStrict, extractCid, nameFromUrl,
   followRedirects, scrapePlaceId, isGoogleUrl,
 } from '../../lib/mapslink.js';
 
@@ -13,14 +13,16 @@ export async function onRequestPost({ request, env }) {
   if (!input) return fail('Tempel dulu link Google Maps atau Place ID Anda.');
   if (input.length > 2048) return fail('Input terlalu panjang.');
 
-  // 1. Place ID mentah atau tertulis jelas di dalam teks.
-  const direct = extractPlaceId(input);
-  if (direct && !isGoogleUrl(input)) return json({ placeId: direct, name: '', address: '' });
-
+  // 1. Place ID mentah, atau teks apa pun yang memuatnya.
   if (!isGoogleUrl(input)) {
-    if (direct) return json({ placeId: direct });
+    const direct = extractPlaceId(input);
+    if (direct) return json({ placeId: direct, name: '', address: '' });
     return fail('Itu bukan link Google Maps. Salin lewat tombol Bagikan di Google Maps.');
   }
+
+  // 2. URL Maps yang sudah memuat Place ID — tak perlu menyentuh jaringan.
+  const inUrl = extractPlaceIdStrict(input);
+  if (inUrl) return json({ placeId: inUrl, name: nameFromUrl(input) });
 
   let finalUrl = input;
   try {
@@ -29,11 +31,11 @@ export async function onRequestPost({ request, env }) {
 
   const name = nameFromUrl(finalUrl) || nameFromUrl(input);
 
-  // 2. Place ID biasanya sudah ada di URL panjang hasil redirect.
-  const fromUrl = extractPlaceId(finalUrl);
+  // 3. Link pendek: Place ID muncul di URL panjang hasil redirect.
+  const fromUrl = extractPlaceIdStrict(finalUrl);
   if (fromUrl) return json({ placeId: fromUrl, name });
 
-  // 3. Kalau hanya ada CID, buka halaman CID-nya dan cari Place ID di HTML.
+  // 4. Kalau hanya ada CID, buka halaman CID-nya dan cari Place ID di HTML.
   const cid = extractCid(finalUrl);
   const pages = cid ? [`https://www.google.com/maps?cid=${cid}`, finalUrl] : [finalUrl];
 
@@ -44,7 +46,7 @@ export async function onRequestPost({ request, env }) {
     } catch { /* coba halaman berikutnya */ }
   }
 
-  // 4. Jaring pengaman terakhir: cari nama usahanya lewat Places API.
+  // 5. Jaring pengaman terakhir: cari nama usahanya lewat Places API.
   const key = placesKey(request, env);
   if (key && name) {
     try {
